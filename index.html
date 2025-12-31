@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trail fire ban guide</title>
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      padding: 16px;
+    }
+
+    .box {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin: 12px 0;
+    }
+
+    .warn { background: #fff3cd; border-color: #ffeeba; }
+    .ok   { background: #e7f6ee; border-color: #bfe8cf; }
+    .err  { background: #fde2e1; border-color: #f5b5b3; }
+
+    input {
+      width: 100%;
+      max-width: 520px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #f6f6f6;
+    }
+
+    tr.closed { background: #ffcccc; }
+    tr.open   { background: #d7f7df; }
+    tr.maybe  { background: #fff3cd; }
+
+    .small { font-size: 0.9rem; }
+  </style>
+</head>
+
+<body>
+  <h1>Trail fire ban guide</h1>
+
+  <div class="box warn small">
+Total fire bans officially start at midnight 00:00 for 24hrs. Fire Danger Ratings are routinely issued by 5pm daily during the fire season. These ratings are determined in conjunction with Bureau of Meteorology.
+  </div>
+
+  <div class="box warn small">
+This tool has been rewritten and is untested with live data so best to double check results 
+  </div>
+  <input id="q" type="text" placeholder="Search trail, region, owner, date">
+
+  <div id="status" class="box warn small">Loading…</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Trail</th>
+        <th>Region</th>
+        <th>Owner</th>
+        <th>Fire danger</th>
+        <th>Fire ban</th>
+        <th>Closed on</th>
+        <th>Closed</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <script>
+    const TRAILS_URL = "/trails.json"
+    const XML_URL = "https://data.eso.sa.gov.au/prod/cfs/criimson/fireDangerRating.xml"
+
+    const statusEl = document.getElementById("status")
+    const tbody = document.getElementById("rows")
+    const q = document.getElementById("q")
+
+    function setStatus(kind, msg) {
+      statusEl.className = "box " + kind + " small"
+      statusEl.textContent = msg
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;")
+    }
+
+    function nextFiveDays() {
+      const now = new Date()
+      return [0,1,2,3,4].map(i => {
+        const d = new Date(now.getTime() + i * 86400000)
+        return d.toISOString().slice(0,10)
+      })
+    }
+
+    function isTotalFireBan(name) {
+      return (name || "").trim() === "Total Fire Ban"
+    }
+
+    // PHP CASE logic
+    function computeClosed(tfbYes, rating, trailBan) {
+      if (!tfbYes) return "No"
+      if (isTotalFireBan(trailBan)) return "Yes"
+      if ((rating || "") === (trailBan || "")) return "Yes"
+      if (rating === "Extreme") return "Maybe"
+      return "No"
+    }
+
+    function rowClass(v) {
+      if (v === "Yes") return "closed"
+      if (v === "Maybe") return "maybe"
+      return "open"
+    }
+
+    function parseXml(xmlDoc) {
+      const map = new Map()
+
+      const areas = [...xmlDoc.querySelectorAll("area")]
+        .filter(a => parseInt(a.getAttribute("districtID") || "0", 10) > 0)
+
+      for (const area of areas) {
+        const region = area.getAttribute("description")
+        const byDate = new Map()
+
+        for (const fp of area.querySelectorAll("forecast-period")) {
+          const date = (fp.getAttribute("start-time-local") || "").slice(0,10)
+          const texts = fp.querySelectorAll("text")
+
+          const rating = texts[0]?.textContent.trim() || "-"
+          const tfbYes = texts[1]?.textContent.trim() === "true"
+
+          if (date) byDate.set(date, { rating, tfbYes })
+        }
+
+        map.set(region, byDate)
+      }
+
+      return map
+    }
+
+    function render(rows) {
+      tbody.innerHTML = ""
+      for (const r of rows) {
+        const tr = document.createElement("tr")
+        tr.className = rowClass(r.closed)
+        tr.innerHTML =
+          "<td>" + escapeHtml(r.date) + "</td>" +
+          "<td>" + escapeHtml(r.trail) + "</td>" +
+          "<td>" + escapeHtml(r.region) + "</td>" +
+          "<td>" + escapeHtml(r.owner) + "</td>" +
+          "<td>" + escapeHtml(r.fireDanger) + "</td>" +
+          "<td>" + escapeHtml(r.fireBan) + "</td>" +
+          "<td>" + escapeHtml(r.closedOn) + "</td>" +
+          "<td>" + escapeHtml(r.closed) + "</td>"
+        tbody.appendChild(tr)
+      }
+    }
+
+    function applySearch() {
+      const term = q.value.toLowerCase()
+      for (const tr of tbody.querySelectorAll("tr")) {
+        tr.style.display = tr.textContent.toLowerCase().includes(term) ? "" : "none"
+      }
+    }
+
+    async function main() {
+      try {
+        setStatus("warn", "Fetching trails.json")
+        const trails = (await (await fetch(TRAILS_URL, { cache: "no-store" })).json()).trails
+
+        setStatus("warn", "Fetching CFS XML")
+        const xmlText = await (await fetch(XML_URL, { cache: "no-store" })).text()
+        const xmlDoc = new DOMParser().parseFromString(xmlText, "application/xml")
+        if (xmlDoc.querySelector("parsererror")) throw new Error("XML parse error")
+
+        const forecast = parseXml(xmlDoc)
+        const days = nextFiveDays()
+        const rows = []
+
+        for (const t of trails) {
+          const regionMap = forecast.get(t.region) || new Map()
+
+          for (const d of days) {
+            const f = regionMap.get(d) || { rating: "-", tfbYes: false }
+            const closed = computeClosed(f.tfbYes, f.rating, t.ban)
+
+            rows.push({
+              date: d,
+              trail: t.name,
+              region: t.region,
+              owner: t.owner,
+              fireDanger: f.rating,
+              fireBan: f.tfbYes ? "Yes" : "No",
+              closedOn: t.ban,
+              closed
+            })
+          }
+        }
+
+        rows.sort((a,b) =>
+          a.date === b.date
+            ? (b.closed === "Yes") - (a.closed === "Yes")
+            : a.date.localeCompare(b.date)
+        )
+
+        render(rows)
+        setStatus("ok", "Loaded " + rows.length + " rows")
+        applySearch()
+      } catch (e) {
+        setStatus("err", "Failed to load live data: " + e.message)
+      }
+    }
+
+    q.addEventListener("input", applySearch)
+    main()
+  </script>
+</body>
+</html>
