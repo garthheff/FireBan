@@ -22,14 +22,6 @@
     .ok   { background: #e7f6ee; border-color: #bfe8cf; }
     .err  { background: #fde2e1; border-color: #f5b5b3; }
 
-    input {
-      width: 100%;
-      max-width: 520px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -40,6 +32,7 @@
       border: 1px solid #ddd;
       padding: 8px;
       text-align: left;
+      vertical-align: middle;
     }
 
     th {
@@ -53,38 +46,247 @@
     tr.maybe  { background: #fff3cd; }
 
     .small { font-size: 0.9rem; }
+
+    .topbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .topbar input {
+      flex: 1 1 320px;
+      max-width: none;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .ctrl {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+      flex: 0 0 auto;
+    }
+
+    .menu {
+      position: relative;
+      display: inline-block;
+    }
+
+    .menu-panel {
+      position: absolute;
+      z-index: 5;
+      right: 0;
+      top: 100%;
+      margin-top: 6px;
+      min-width: 220px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      display: none;
+    }
+
+    .menu-panel.open {
+      display: block;
+    }
+
+    .cols {
+      display: grid;
+      gap: 8px;
+    }
+
+    .cols label {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .col-hidden {
+      display: none;
+    }
+
+    .trailcell {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .trailactions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .trailactions a,
+    .trailactions button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 0;
+      padding: 2px;
+      border-radius: 6px;
+    }
+
+    .trailactions button {
+      border: 1px solid #ddd;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .trailactions button:hover {
+      background: #f3f3f3;
+    }
+
+    .trailicon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .infoicon {
+      width: 18px;
+      height: 18px;
+      color: #1e88e5;
+    }
+
+    .hidden-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #ddd;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: #fff;
+    }
+
+    .pill button {
+      border: 1px solid #ddd;
+      background: #fff;
+      border-radius: 999px;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+
+    .pill button:hover {
+      background: #f3f3f3;
+    }
   </style>
 </head>
 
 <body>
   <h1>Trail fire ban guide</h1>
 
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="trailforks-icon" viewBox="0 0 300 300">
+      <polygon points="150 20 0 279 300 279" fill="#FFCE07"></polygon>
+      <path d="M198 257.5 L171.5 257 L171.5 200 L151 184.5 L148 184.5 L127.5 200 L127.5 257 L100.5 257 L100.5 200 L133.5 164 L134 91.5 L165.5 92 L165.5 164 L198.5 188 Z" fill="currentColor"></path>
+    </symbol>
+
+    <symbol id="x-icon" viewBox="0 0 24 24">
+      <path d="M18.3 5.7 L5.7 18.3 M5.7 5.7 L18.3 18.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+    </symbol>
+
+    <symbol id="info-icon" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" fill="currentColor"></circle>
+      <rect x="11" y="10" width="2" height="7" fill="#fff"></rect>
+      <circle cx="12" cy="7" r="1.2" fill="#fff"></circle>
+    </symbol>
+  </svg>
+
   <div class="box warn small">
-Total fire bans officially start at midnight 00:00 for 24hrs. Fire Danger Ratings are routinely issued by 5pm daily during the fire season. These ratings are determined in conjunction with Bureau of Meteorology.
+    Total fire bans officially start at midnight 00:00 for 24hrs. Fire Danger Ratings are routinely issued by 5pm daily during the fire season. These ratings are determined in conjunction with Bureau of Meteorology.
   </div>
 
   <div class="box warn small">
-This tool has been rewritten and is untested with live data so best to double check results 
+    This tool has been rewritten and is untested with live data so best to double check results
   </div>
-  <input id="q" type="text" placeholder="Search trail, region, owner, date">
 
-  <div id="status" class="box warn small">Loading…</div>
+  <div class="topbar">
+    <input id="q" type="text" placeholder="Search trail, region, owner, date">
+
+    <div class="ctrl">
+      <strong>Sort</strong>
+      <select id="sortKey">
+        <option value="date">Date</option>
+        <option value="trail">Trail</option>
+        <option value="region">Region</option>
+        <option value="owner">Owner</option>
+        <option value="fireDanger">Fire danger</option>
+        <option value="fireBan">Fire ban</option>
+        <option value="closedOn">Closed on</option>
+        <option value="closed">Closed</option>
+      </select>
+
+      <select id="sortDir">
+        <option value="asc">A to Z</option>
+        <option value="desc">Z to A</option>
+      </select>
+
+    </div>
+
+    <div class="ctrl menu">
+      <button id="colsBtn" type="button">Columns</button>
+      <div id="colsPanel" class="menu-panel" aria-label="Column picker">
+        <div class="cols">
+          <label><input type="checkbox" data-col="date" checked> Date</label>
+          <label><input type="checkbox" data-col="trail" checked> Trail</label>
+          <label><input type="checkbox" data-col="region" checked> Region</label>
+          <label><input type="checkbox" data-col="owner" checked> Owner</label>
+          <label><input type="checkbox" data-col="fireDanger" checked> Fire danger</label>
+          <label><input type="checkbox" data-col="fireBan" checked> Fire ban</label>
+          <label><input type="checkbox" data-col="closedOn" checked> Closed on</label>
+          <label><input type="checkbox" data-col="closed" checked> Closed</label>
+        </div>
+
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+          <button id="colsAll" type="button">Show all</button>
+          <button id="colsNone" type="button">Hide all</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <table>
     <thead>
       <tr>
-        <th>Date</th>
-        <th>Trail</th>
-        <th>Region</th>
-        <th>Owner</th>
-        <th>Fire danger</th>
-        <th>Fire ban</th>
-        <th>Closed on</th>
-        <th>Closed</th>
+        <th data-col="date">Date</th>
+        <th data-col="trail">Trail</th>
+        <th data-col="region">Region</th>
+        <th data-col="owner">Owner</th>
+        <th data-col="fireDanger">Fire danger</th>
+        <th data-col="fireBan">Fire ban</th>
+        <th data-col="closedOn">Closed on</th>
+        <th data-col="closed">Closed</th>
       </tr>
     </thead>
     <tbody id="rows"></tbody>
   </table>
+
+  <div id="status" class="box warn small">Loading…</div>
+
+  <div id="hiddenBox" class="box warn small" style="display:none">
+    <div><strong>Hidden trails</strong></div>
+    <div id="hiddenList" class="hidden-list"></div>
+    <div style="margin-top:8px">
+      <button id="unhideAllBtn" type="button">Unhide all</button>
+    </div>
+  </div>
 
   <script>
     const TRAILS_URL = "./trails.json"
@@ -93,6 +295,38 @@ This tool has been rewritten and is untested with live data so best to double ch
     const statusEl = document.getElementById("status")
     const tbody = document.getElementById("rows")
     const q = document.getElementById("q")
+
+    const hiddenBox = document.getElementById("hiddenBox")
+    const hiddenListEl = document.getElementById("hiddenList")
+    const unhideAllBtn = document.getElementById("unhideAllBtn")
+
+    const sortKeyEl = document.getElementById("sortKey")
+    const sortDirEl = document.getElementById("sortDir")
+ 
+    const colsBtn = document.getElementById("colsBtn")
+    const colsPanel = document.getElementById("colsPanel")
+    const colsAll = document.getElementById("colsAll")
+    const colsNone = document.getElementById("colsNone")
+
+    const HIDDEN_COOKIE = "hidden_trails_v1"
+    const PREFS_COOKIE = "trail_prefs_v1"
+
+    let hidden = new Set()
+    let allRows = []
+    let prefs = {
+      sortKey: "date",
+      sortDir: "asc",
+      cols: {
+        date: true,
+        trail: true,
+        region: true,
+        owner: true,
+        fireDanger: true,
+        fireBan: true,
+        closedOn: true,
+        closed: true
+      }
+    }
 
     function setStatus(kind, msg) {
       statusEl.className = "box " + kind + " small"
@@ -120,7 +354,6 @@ This tool has been rewritten and is untested with live data so best to double ch
       return (name || "").trim() === "Total Fire Ban"
     }
 
-    // PHP CASE logic
     function computeClosed(tfbYes, rating, trailBan) {
       if (!tfbYes) return "No"
       if (isTotalFireBan(trailBan)) return "Yes"
@@ -161,33 +394,289 @@ This tool has been rewritten and is untested with live data so best to double ch
       return map
     }
 
+    function setCookie(name, value, days) {
+      const d = new Date()
+      d.setTime(d.getTime() + days * 86400000)
+      document.cookie = name + "=" + encodeURIComponent(value) + "; expires=" + d.toUTCString() + "; path=/; SameSite=Lax"
+    }
+
+    function getCookie(name) {
+      const parts = document.cookie.split(";")
+      for (const p of parts) {
+        const s = p.trim()
+        if (s.startsWith(name + "=")) return decodeURIComponent(s.slice(name.length + 1))
+      }
+      return ""
+    }
+
+    function loadHidden() {
+      try {
+        const raw = getCookie(HIDDEN_COOKIE)
+        if (!raw) return new Set()
+        const arr = JSON.parse(raw)
+        if (!Array.isArray(arr)) return new Set()
+        return new Set(arr.map(x => String(x)))
+      } catch {
+        return new Set()
+      }
+    }
+
+    function saveHidden() {
+      const arr = [...hidden.values()].sort((a,b) => a.localeCompare(b))
+      setCookie(HIDDEN_COOKIE, JSON.stringify(arr), 365)
+    }
+
+    function loadPrefs() {
+      try {
+        const raw = getCookie(PREFS_COOKIE)
+        if (!raw) return null
+        const obj = JSON.parse(raw)
+        if (!obj || typeof obj !== "object") return null
+        return obj
+      } catch {
+        return null
+      }
+    }
+
+    function savePrefs() {
+      setCookie(PREFS_COOKIE, JSON.stringify(prefs), 365)
+    }
+
+    function applyPrefsToUi() {
+      sortKeyEl.value = prefs.sortKey || "date"
+      sortDirEl.value = prefs.sortDir || "asc"
+
+      for (const cb of colsPanel.querySelectorAll("input[type=checkbox][data-col]")) {
+        const k = cb.getAttribute("data-col")
+        cb.checked = !!(prefs.cols && prefs.cols[k])
+      }
+    }
+
+    function applyColumnVisibility() {
+      const setCol = (el, colKey) => {
+        if (!prefs.cols[colKey]) el.classList.add("col-hidden")
+        else el.classList.remove("col-hidden")
+      }
+
+      for (const th of document.querySelectorAll("th[data-col]")) {
+        setCol(th, th.getAttribute("data-col"))
+      }
+
+      for (const td of document.querySelectorAll("td[data-col]")) {
+        setCol(td, td.getAttribute("data-col"))
+      }
+    }
+
+    function renderHiddenList() {
+      const list = [...hidden.values()].sort((a,b) => a.localeCompare(b))
+      hiddenListEl.innerHTML = ""
+
+      if (list.length === 0) {
+        hiddenBox.style.display = "none"
+        return
+      }
+
+      hiddenBox.style.display = ""
+      for (const name of list) {
+        const wrap = document.createElement("div")
+        wrap.className = "pill"
+        wrap.innerHTML =
+          "<span>" + escapeHtml(name) + "</span>" +
+          "<button type=\"button\" data-unhide=\"" + escapeHtml(name) + "\">Unhide</button>"
+        hiddenListEl.appendChild(wrap)
+      }
+    }
+
+    function cmp(a, b) {
+      if (a === b) return 0
+      if (a == null) return -1
+      if (b == null) return 1
+      return String(a).localeCompare(String(b))
+    }
+
+    function sortedRows(rows) {
+      const key = prefs.sortKey || "date"
+      const dir = (prefs.sortDir || "asc") === "desc" ? -1 : 1
+
+      const copy = rows.slice()
+      copy.sort((ra, rb) => {
+        const va = ra[key]
+        const vb = rb[key]
+
+        if (key === "closed") {
+          const rank = v => v === "Yes" ? 2 : v === "Maybe" ? 1 : 0
+          return dir * (rank(va) - rank(vb))
+        }
+
+        return dir * cmp(va, vb)
+      })
+      return copy
+    }
+
     function render(rows) {
       tbody.innerHTML = ""
-      for (const r of rows) {
+
+      const term = q.value.toLowerCase()
+      const list = sortedRows(rows)
+
+      for (const r of list) {
+        if (hidden.has(r.trail)) continue
+
         const tr = document.createElement("tr")
         tr.className = rowClass(r.closed)
+
+        const trailCell =
+          "<div class=\"trailcell\">" +
+            "<span>" + escapeHtml(r.trail) + "</span>" +
+            "<span class=\"trailactions\">" +
+              (r.trailforks
+                ? "<a href=\"" + escapeHtml(r.trailforks) + "\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Open Trailforks\">" +
+                    "<svg class=\"trailicon\" viewBox=\"0 0 300 300\" aria-hidden=\"true\">" +
+                      "<use href=\"#trailforks-icon\"></use>" +
+                    "</svg>" +
+                  "</a>"
+                : ""
+              ) +
+              (r.official
+                ? "<a href=\"" + escapeHtml(r.official) + "\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Official trail info\">" +
+                    "<svg class=\"infoicon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\">" +
+                      "<use href=\"#info-icon\"></use>" +
+                    "</svg>" +
+                  "</a>"
+                : ""
+              ) +
+              "<button type=\"button\" data-hide=\"" + escapeHtml(r.trail) + "\" aria-label=\"Hide trail\">" +
+                "<svg class=\"trailicon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\">" +
+                  "<use href=\"#x-icon\"></use>" +
+                "</svg>" +
+              "</button>" +
+            "</span>" +
+          "</div>"
+
         tr.innerHTML =
-          "<td>" + escapeHtml(r.date) + "</td>" +
-          "<td>" + escapeHtml(r.trail) + "</td>" +
-          "<td>" + escapeHtml(r.region) + "</td>" +
-          "<td>" + escapeHtml(r.owner) + "</td>" +
-          "<td>" + escapeHtml(r.fireDanger) + "</td>" +
-          "<td>" + escapeHtml(r.fireBan) + "</td>" +
-          "<td>" + escapeHtml(r.closedOn) + "</td>" +
-          "<td>" + escapeHtml(r.closed) + "</td>"
+          "<td data-col=\"date\">" + escapeHtml(r.date) + "</td>" +
+          "<td data-col=\"trail\">" + trailCell + "</td>" +
+          "<td data-col=\"region\">" + escapeHtml(r.region) + "</td>" +
+          "<td data-col=\"owner\">" + escapeHtml(r.owner) + "</td>" +
+          "<td data-col=\"fireDanger\">" + escapeHtml(r.fireDanger) + "</td>" +
+          "<td data-col=\"fireBan\">" + escapeHtml(r.fireBan) + "</td>" +
+          "<td data-col=\"closedOn\">" + escapeHtml(r.closedOn) + "</td>" +
+          "<td data-col=\"closed\">" + escapeHtml(r.closed) + "</td>"
+
+        if (term && !tr.textContent.toLowerCase().includes(term)) {
+          continue
+        }
+
         tbody.appendChild(tr)
       }
+
+      applyColumnVisibility()
     }
 
     function applySearch() {
-      const term = q.value.toLowerCase()
-      for (const tr of tbody.querySelectorAll("tr")) {
-        tr.style.display = tr.textContent.toLowerCase().includes(term) ? "" : "none"
-      }
+      render(allRows)
     }
+
+    function closeColsPanelIfClickOutside(e) {
+      if (!colsPanel.classList.contains("open")) return
+      const within = colsPanel.contains(e.target) || colsBtn.contains(e.target)
+      if (!within) colsPanel.classList.remove("open")
+    }
+
+    tbody.addEventListener("click", e => {
+      const btn = e.target.closest("button")
+      if (!btn) return
+
+      const name = btn.getAttribute("data-hide")
+      if (!name) return
+
+      hidden.add(name)
+      saveHidden()
+      renderHiddenList()
+      render(allRows)
+      setStatus("ok", "Loaded " + allRows.length + " rows")
+    })
+
+    hiddenListEl.addEventListener("click", e => {
+      const btn = e.target.closest("button")
+      if (!btn) return
+      const name = btn.getAttribute("data-unhide")
+      if (!name) return
+
+      hidden.delete(name)
+      saveHidden()
+      renderHiddenList()
+      render(allRows)
+      setStatus("ok", "Loaded " + allRows.length + " rows")
+    })
+
+    unhideAllBtn.addEventListener("click", () => {
+      hidden = new Set()
+      saveHidden()
+      renderHiddenList()
+      render(allRows)
+      setStatus("ok", "Loaded " + allRows.length + " rows")
+    })
+
+    sortKeyEl.addEventListener("change", () => {
+      prefs.sortKey = sortKeyEl.value
+      savePrefs()
+      render(allRows)
+    })
+
+    sortDirEl.addEventListener("change", () => {
+      prefs.sortDir = sortDirEl.value
+      savePrefs()
+      render(allRows)
+    })
+
+    colsBtn.addEventListener("click", () => {
+      colsPanel.classList.toggle("open")
+    })
+
+    colsPanel.addEventListener("change", e => {
+      const cb = e.target.closest("input[type=checkbox][data-col]")
+      if (!cb) return
+      const k = cb.getAttribute("data-col")
+      prefs.cols[k] = !!cb.checked
+      savePrefs()
+      applyColumnVisibility()
+    })
+
+    colsAll.addEventListener("click", () => {
+      for (const k of Object.keys(prefs.cols)) prefs.cols[k] = true
+      applyPrefsToUi()
+      savePrefs()
+      applyColumnVisibility()
+    })
+
+    colsNone.addEventListener("click", () => {
+      for (const k of Object.keys(prefs.cols)) prefs.cols[k] = false
+      prefs.cols.trail = true
+      applyPrefsToUi()
+      savePrefs()
+      applyColumnVisibility()
+    })
+
+    document.addEventListener("click", closeColsPanelIfClickOutside)
 
     async function main() {
       try {
+        hidden = loadHidden()
+        renderHiddenList()
+
+        const p = loadPrefs()
+        if (p) {
+          prefs.sortKey = p.sortKey || prefs.sortKey
+          prefs.sortDir = p.sortDir || prefs.sortDir
+          if (p.cols && typeof p.cols === "object") {
+            for (const k of Object.keys(prefs.cols)) {
+              if (k in p.cols) prefs.cols[k] = !!p.cols[k]
+            }
+          }
+        }
+        applyPrefsToUi()
+
         setStatus("warn", "Fetching trails.json")
         const trails = (await (await fetch(TRAILS_URL, { cache: "no-store" })).json()).trails
 
@@ -215,20 +704,16 @@ This tool has been rewritten and is untested with live data so best to double ch
               fireDanger: f.rating,
               fireBan: f.tfbYes ? "Yes" : "No",
               closedOn: t.ban,
-              closed
+              closed,
+              trailforks: t.trailforks || null,
+              official: t.official || null
             })
           }
         }
 
-        rows.sort((a,b) =>
-          a.date === b.date
-            ? (b.closed === "Yes") - (a.closed === "Yes")
-            : a.date.localeCompare(b.date)
-        )
-
-        render(rows)
-        setStatus("ok", "Loaded " + rows.length + " rows")
-        applySearch()
+        allRows = rows
+        render(allRows)
+        setStatus("ok", "Loaded " + allRows.length + " rows")
       } catch (e) {
         setStatus("err", "Failed to load live data: " + e.message)
       }
