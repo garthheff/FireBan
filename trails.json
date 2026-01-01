@@ -30,7 +30,10 @@
     { "trailID": 27, "name": "Kinchina", "region": "Murraylands", "ban": "Catastrophic", "owner": "Department for Environment and Water", "trailforks": "https://www.trailforks.com/region/kinchina-conservation-park-22232/", "official": "https://www.parks.sa.gov.au/parks/kinchina-conservation-park" },
     { "trailID": 28, "name": "Hope Valley Reservoir Reserve", "region": "Adelaide Metropolitan", "ban": "Total Fire Ban", "owner": "Reservoirs SA", "trailforks": null, "official": null },
     { "trailID": 29, "name": "Happy Valley Reservoir Reserve", "region": "Mount Lofty Ranges", "ban": "Total Fire Ban", "owner": "Reservoirs SA", "trailforks": null, "official": null },
-    { "trailID": 30, "name": "Melrose", "region": "Flinders", "ban": "Total Fire Ban", "owner": "Private land and National Parks", "trailforks": "https://www.trailforks.com/region/melrose", "official": "https://bikemelrose.au" }
+    { "trailID": 30, "name": "Melrose", "region": "Flinders", "ban": "Total Fire Ban", "owner": "Private land and National Parks", "trailforks": "https://www.trailforks.com/region/melrose", "official": "https://bikemelrose.au" },
+    { "trailID": 31, "name": "Barton", "region": "Mount Lofty Ranges", "ban": "Total Fire Ban", "owner": "Forestry SA", "trailforks": null, "official": null },
+    { "trailID": 32, "name": "Bennetts", "region": "Mount Lofty Ranges", "ban": "Total Fire Ban", "owner": "Forestry SA", "trailforks": "https://www.trailforks.com/region/bennetts-44269", "official": null }
   ]
 }
+
 
