@@ -233,11 +233,12 @@
         <option value="closed">Closed</option>
       </select>
 
-      <select id="sortDir">
-        <option value="asc">A to Z</option>
-        <option value="desc">Z to A</option>
+      <select id="sortMode">
+        <option value="az">A to Z</option>
+        <option value="za">Z to A</option>
+        <option value="date_az">By date, then A to Z</option>
+        <option value="date_za">By date, then Z to A</option>
       </select>
-
     </div>
 
     <div class="ctrl menu">
@@ -301,8 +302,8 @@
     const unhideAllBtn = document.getElementById("unhideAllBtn")
 
     const sortKeyEl = document.getElementById("sortKey")
-    const sortDirEl = document.getElementById("sortDir")
- 
+    const sortModeEl = document.getElementById("sortMode") || document.getElementById("sortDir")
+
     const colsBtn = document.getElementById("colsBtn")
     const colsPanel = document.getElementById("colsPanel")
     const colsAll = document.getElementById("colsAll")
@@ -313,9 +314,10 @@
 
     let hidden = new Set()
     let allRows = []
+
     let prefs = {
-      sortKey: "date",
-      sortDir: "asc",
+      sortKey: "trail",
+      sortMode: "date_az",
       cols: {
         date: true,
         trail: true,
@@ -443,8 +445,11 @@
     }
 
     function applyPrefsToUi() {
-      sortKeyEl.value = prefs.sortKey || "date"
-      sortDirEl.value = prefs.sortDir || "asc"
+      sortKeyEl.value = prefs.sortKey || "trail"
+
+      if (sortModeEl) {
+        sortModeEl.value = prefs.sortMode || "date_az"
+      }
 
       for (const cb of colsPanel.querySelectorAll("input[type=checkbox][data-col]")) {
         const k = cb.getAttribute("data-col")
@@ -495,21 +500,30 @@
     }
 
     function sortedRows(rows) {
-      const key = prefs.sortKey || "date"
-      const dir = (prefs.sortDir || "asc") === "desc" ? -1 : 1
+      const key = prefs.sortKey || "trail"
+      const mode = prefs.sortMode || "date_az"
+
+      const dirPrimary = (mode === "za" || mode === "date_za") ? -1 : 1
+      const groupByDate = (mode === "date_az" || mode === "date_za")
 
       const copy = rows.slice()
       copy.sort((ra, rb) => {
+        if (groupByDate) {
+          const d = cmp(ra.date, rb.date)
+          if (d !== 0) return d
+        }
+
         const va = ra[key]
         const vb = rb[key]
 
         if (key === "closed") {
           const rank = v => v === "Yes" ? 2 : v === "Maybe" ? 1 : 0
-          return dir * (rank(va) - rank(vb))
+          return dirPrimary * (rank(va) - rank(vb))
         }
 
-        return dir * cmp(va, vb)
+        return dirPrimary * cmp(va, vb)
       })
+
       return copy
     }
 
@@ -624,11 +638,16 @@
       render(allRows)
     })
 
-    sortDirEl.addEventListener("change", () => {
-      prefs.sortDir = sortDirEl.value
-      savePrefs()
-      render(allRows)
-    })
+    if (sortModeEl) {
+      sortModeEl.addEventListener("change", () => {
+        const v = sortModeEl.value
+        prefs.sortMode = v
+        if (v === "asc") prefs.sortMode = "az"
+        if (v === "desc") prefs.sortMode = "za"
+        savePrefs()
+        render(allRows)
+      })
+    }
 
     colsBtn.addEventListener("click", () => {
       colsPanel.classList.toggle("open")
@@ -668,7 +687,13 @@
         const p = loadPrefs()
         if (p) {
           prefs.sortKey = p.sortKey || prefs.sortKey
-          prefs.sortDir = p.sortDir || prefs.sortDir
+
+          if (p.sortMode) {
+            prefs.sortMode = p.sortMode
+          } else if (p.sortDir) {
+            prefs.sortMode = (p.sortDir === "desc") ? "za" : "az"
+          }
+
           if (p.cols && typeof p.cols === "object") {
             for (const k of Object.keys(prefs.cols)) {
               if (k in p.cols) prefs.cols[k] = !!p.cols[k]
