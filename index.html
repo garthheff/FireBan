@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Trail fire ban guide</title>
 
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <style>
     body {
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -208,6 +211,51 @@
     tr.open   { background: #d7f7df; }
     tr.maybe  { background: #fff3cd; }
 
+    #map {
+      height: 360px;
+      margin-top: 10px;
+      border: 1px solid #ddd;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    #map:fullscreen {
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .mapbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .mapbar .left {
+      display: inline-flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .mapbar button {
+      border: 1px solid #ddd;
+      background: #fff;
+      cursor: pointer;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+
+    .mapbar button:hover { background: #f3f3f3; }
+
+    .map-hidden #map { display: none; }
+    .map-hidden .map-help { display: none; }
+
     #testBox button {
       border: 1px solid #ddd;
       background: #fff;
@@ -287,6 +335,33 @@
           <button id="colsNone" type="button">Hide all</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="box small" style="margin-top:12px" id="mapBox">
+    <div class="mapbar">
+      <div class="left">
+        <div><strong>Map</strong> (OpenStreetMap)</div>
+
+        <div class="ctrl">
+          <strong>Map day</strong>
+          <select id="mapDay">
+            <option value="today">Today</option>
+            <option value="tomorrow">Tomorrow</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="left">
+        <button id="mapToggleBtn" type="button">Hide map</button>
+        <button id="mapFsBtn" type="button">Full screen</button>
+      </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="small map-help" style="margin-top:8px; opacity:0.85">
+      Markers require coords in trails.json: lat and lon.
     </div>
   </div>
 
@@ -412,6 +487,11 @@
     const colsAll = document.getElementById("colsAll")
     const colsNone = document.getElementById("colsNone")
 
+    const mapBoxEl = document.getElementById("mapBox")
+    const mapDayEl = document.getElementById("mapDay")
+    const mapToggleBtn = document.getElementById("mapToggleBtn")
+    const mapFsBtn = document.getElementById("mapFsBtn")
+
     const testBox = document.getElementById("testBox")
     const testRegionEl = document.getElementById("testRegion")
     const testDateEl = document.getElementById("testDate")
@@ -422,7 +502,7 @@
     const testNoteEl = document.getElementById("testNote")
 
     const HIDDEN_COOKIE = "hidden_trails_v1"
-    const PREFS_COOKIE = "trail_prefs_v1"
+    const PREFS_COOKIE = "trail_prefs_v2"
 
     let hidden = new Set()
     let allRows = []
@@ -432,9 +512,14 @@
 
     const overrides = new Map()
 
+    let map = null
+    let markersLayer = null
+    let lastMapBounds = null
+
     let prefs = {
       sortKey: "trail",
       sortMode: "az",
+      mapHidden: false,
       cols: {
         trail: true,
         region: true,
@@ -445,9 +530,6 @@
         closed: true
       }
     }
-
-    sortKeyEl.value = "trail"
-    sortModeEl.value = "az"
 
     function setStatus(kind, msg) {
       statusEl.className = "box " + kind + " small"
@@ -701,6 +783,97 @@
       }
     }
 
+    function initMapIfNeeded() {
+      if (map) return
+
+      map = L.map("map", { scrollWheelZoom: false })
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "© OpenStreetMap contributors"
+      }).addTo(map)
+
+      markersLayer = L.layerGroup().addTo(map)
+      map.setView([-34.9285, 138.6007], 9)
+    }
+
+    function colorForClosed(v) {
+      if (v === "Yes") return "#d32f2f"
+      if (v === "Maybe") return "#f9a825"
+      return "#2e7d32"
+    }
+
+    function buildPopupHtml(r) {
+      return (
+        "<div style=\"font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; font-size: 13px\">" +
+          "<div style=\"font-weight:700; margin-bottom:4px\">" + escapeHtml(r.trail) + "</div>" +
+          "<div><strong>Region</strong> " + escapeHtml(r.region) + "</div>" +
+          "<div><strong>Owner</strong> " + escapeHtml(r.owner) + "</div>" +
+          "<div><strong>Fire danger</strong> " + escapeHtml(r.fireDanger) + "</div>" +
+          "<div><strong>Fire ban</strong> " + escapeHtml(r.fireBan) + "</div>" +
+          "<div><strong>Closed</strong> " + escapeHtml(r.closed) + "</div>" +
+          (r.trailforks ? "<div style=\"margin-top:6px\"><a href=\"" + escapeHtml(r.trailforks) + "\" target=\"_blank\" rel=\"noopener noreferrer\">Trailforks</a></div>" : "") +
+          (r.official ? "<div><a href=\"" + escapeHtml(r.official) + "\" target=\"_blank\" rel=\"noopener noreferrer\">Official</a></div>" : "") +
+        "</div>"
+      )
+    }
+
+    function getMapPickDate() {
+      const days = nextTwoDays()
+      const today = days[0]
+      const tomorrow = days[1]
+      return (mapDayEl.value === "tomorrow") ? tomorrow : today
+    }
+
+    function renderMap() {
+      if (!map || !markersLayer) return
+      if (prefs.mapHidden) return
+
+      markersLayer.clearLayers()
+      lastMapBounds = null
+
+      const pick = getMapPickDate()
+      const term = q.value.toLowerCase()
+
+      const rows = allRows.filter(r => {
+        if (r.date !== pick) return false
+        if (hidden.has(r.trail)) return false
+        if (r.lat == null || r.lon == null) return false
+
+        const hay = (r.trail + " " + r.region + " " + r.owner).toLowerCase()
+        if (term && !hay.includes(term)) return false
+        return true
+      })
+
+      const bounds = []
+
+      for (const r of rows) {
+        const lat = Number(r.lat)
+        const lon = Number(r.lon)
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue
+
+        const c = colorForClosed(r.closed)
+        const m = L.circleMarker([lat, lon], {
+          radius: 8,
+          weight: 2,
+          color: c,
+          fillColor: c,
+          fillOpacity: 0.7
+        })
+
+        m.bindPopup(buildPopupHtml(r))
+        m.addTo(markersLayer)
+        bounds.push([lat, lon])
+      }
+
+      if (bounds.length) {
+        lastMapBounds = L.latLngBounds(bounds)
+        map.fitBounds(lastMapBounds, { padding: [30, 30] })
+      } else {
+        map.setView([-34.9285, 138.6007], 9)
+      }
+    }
+
     function renderAll() {
       const days = nextTwoDays()
       const today = days[0]
@@ -716,6 +889,7 @@
       renderIntoTbody(tbodyTomorrow, tomorrowRows)
 
       applyColumnVisibility()
+      renderMap()
     }
 
     function updateTestNote() {
@@ -756,7 +930,9 @@
             closedOn: t.ban,
             closed,
             trailforks: t.trailforks || null,
-            official: t.official || null
+            official: t.official || null,
+            lat: t.lat,
+            lon: t.lon
           })
         }
       }
@@ -772,7 +948,29 @@
       if (!within) colsPanel.classList.remove("open")
     }
 
-    document.addEventListener("click", closeColsPanelIfClickOutside)
+    function isMapHidden() {
+      return mapBoxEl.classList.contains("map-hidden")
+    }
+
+    function setMapHidden(hiddenNow) {
+      prefs.mapHidden = !!hiddenNow
+      savePrefs()
+
+      if (prefs.mapHidden) {
+        mapBoxEl.classList.add("map-hidden")
+        mapToggleBtn.textContent = "Show map"
+      } else {
+        mapBoxEl.classList.remove("map-hidden")
+        mapToggleBtn.textContent = "Hide map"
+
+        if (map) {
+          setTimeout(() => {
+            map.invalidateSize()
+            renderMap()
+          }, 50)
+        }
+      }
+    }
 
     colsBtn.addEventListener("click", () => {
       colsPanel.classList.toggle("open")
@@ -785,6 +983,7 @@
       prefs.cols[k] = !!cb.checked
       savePrefs()
       applyColumnVisibility()
+      renderMap()
     })
 
     colsAll.addEventListener("click", () => {
@@ -792,6 +991,7 @@
       applyPrefsToUi()
       savePrefs()
       applyColumnVisibility()
+      renderMap()
     })
 
     colsNone.addEventListener("click", () => {
@@ -800,6 +1000,7 @@
       applyPrefsToUi()
       savePrefs()
       applyColumnVisibility()
+      renderMap()
     })
 
     sortKeyEl.addEventListener("change", () => {
@@ -814,7 +1015,40 @@
       renderAll()
     })
 
+    mapDayEl.addEventListener("change", () => {
+      renderMap()
+    })
+
+    mapToggleBtn.addEventListener("click", () => {
+      setMapHidden(!isMapHidden())
+    })
+
+    mapFsBtn.addEventListener("click", async () => {
+      const el = document.getElementById("map")
+      try {
+        if (!document.fullscreenElement) {
+          await el.requestFullscreen()
+        } else {
+          await document.exitFullscreen()
+        }
+      } catch {
+      }
+    })
+
+    document.addEventListener("fullscreenchange", () => {
+      if (!map) return
+      setTimeout(() => {
+        map.invalidateSize()
+        if (lastMapBounds) {
+          map.fitBounds(lastMapBounds, { padding: [40, 40] })
+        } else {
+          renderMap()
+        }
+      }, 150)
+    })
+
     q.addEventListener("input", () => renderAll())
+    document.addEventListener("click", closeColsPanelIfClickOutside)
 
     document.addEventListener("click", e => {
       const btn = e.target.closest("button")
@@ -826,7 +1060,6 @@
         saveHidden()
         renderHiddenList()
         renderAll()
-        setStatus("ok", "Loaded " + allRows.length + " rows")
         return
       }
 
@@ -836,7 +1069,6 @@
         saveHidden()
         renderHiddenList()
         renderAll()
-        setStatus("ok", "Loaded " + allRows.length + " rows")
       }
     })
 
@@ -845,7 +1077,6 @@
       saveHidden()
       renderHiddenList()
       renderAll()
-      setStatus("ok", "Loaded " + allRows.length + " rows")
     })
 
     testApplyBtn.addEventListener("click", () => {
@@ -875,6 +1106,7 @@
         if (p) {
           if (p.sortKey) prefs.sortKey = p.sortKey
           if (p.sortMode) prefs.sortMode = p.sortMode
+          if (typeof p.mapHidden === "boolean") prefs.mapHidden = p.mapHidden
           if (p.cols && typeof p.cols === "object") {
             for (const k of Object.keys(prefs.cols)) {
               if (k in p.cols) prefs.cols[k] = !!p.cols[k]
@@ -886,6 +1118,9 @@
         if (!prefs.sortMode) prefs.sortMode = "az"
 
         applyPrefsToUi()
+
+        initMapIfNeeded()
+        setMapHidden(!!prefs.mapHidden)
 
         setStatus("warn", "Fetching trails.json")
         const trailsJson = await (await fetch(TRAILS_URL, { cache: "no-store" })).json()
