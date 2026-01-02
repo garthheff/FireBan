@@ -265,6 +265,22 @@
     }
 
     #testBox button:hover { background: #f3f3f3; }
+
+    /* Ensure Columns dropdown appears above the map */
+.menu {
+  position: relative;
+  z-index: 10001;
+}
+
+.menu-panel {
+  z-index: 10002;
+}
+
+/* Keep Leaflet map below UI overlays */
+#map {
+  position: relative;
+  z-index: 1;
+}
   </style>
 </head>
 
