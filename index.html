@@ -22,29 +22,6 @@
     .ok   { background: #e7f6ee; border-color: #bfe8cf; }
     .err  { background: #fde2e1; border-color: #f5b5b3; }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-      vertical-align: middle;
-    }
-
-    th {
-      position: sticky;
-      top: 0;
-      background: #f6f6f6;
-    }
-
-    tr.closed { background: #ffcccc; }
-    tr.open   { background: #d7f7df; }
-    tr.maybe  { background: #fff3cd; }
-
     .small { font-size: 0.9rem; }
 
     .topbar {
@@ -94,9 +71,7 @@
       display: none;
     }
 
-    .menu-panel.open {
-      display: block;
-    }
+    .menu-panel.open { display: block; }
 
     .cols {
       display: grid;
@@ -109,9 +84,7 @@
       align-items: center;
     }
 
-    .col-hidden {
-      display: none;
-    }
+    .col-hidden { display: none; }
 
     .trailcell {
       display: flex;
@@ -143,9 +116,7 @@
       cursor: pointer;
     }
 
-    .trailactions button:hover {
-      background: #f3f3f3;
-    }
+    .trailactions button:hover { background: #f3f3f3; }
 
     .trailicon {
       width: 18px;
@@ -183,9 +154,73 @@
       cursor: pointer;
     }
 
-    .pill button:hover {
-      background: #f3f3f3;
+    .pill button:hover { background: #f3f3f3; }
+
+    .day-section {
+      margin-top: 14px;
     }
+
+    .day-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      background: #f6f6f6;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .day-header .date {
+      font-weight: 600;
+      opacity: 0.85;
+    }
+
+    .day-gap {
+      height: 14px;
+    }
+
+    .tablewrap {
+      border: 1px solid #ddd;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #f6f6f6;
+      z-index: 1;
+    }
+
+    tr.closed { background: #ffcccc; }
+    tr.open   { background: #d7f7df; }
+    tr.maybe  { background: #fff3cd; }
+
+    #testBox button {
+      border: 1px solid #ddd;
+      background: #fff;
+      cursor: pointer;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+
+    #testBox button:hover { background: #f3f3f3; }
   </style>
 </head>
 
@@ -218,12 +253,11 @@
   </div>
 
   <div class="topbar">
-    <input id="q" type="text" placeholder="Search trail, region, owner, date">
+    <input id="q" type="text" placeholder="Search trail, region, owner">
 
     <div class="ctrl">
       <strong>Sort</strong>
       <select id="sortKey">
-        <option value="date">Date</option>
         <option value="trail">Trail</option>
         <option value="region">Region</option>
         <option value="owner">Owner</option>
@@ -236,8 +270,6 @@
       <select id="sortMode">
         <option value="az">A to Z</option>
         <option value="za">Z to A</option>
-        <option value="date_az">By date, then A to Z</option>
-        <option value="date_za">By date, then Z to A</option>
       </select>
     </div>
 
@@ -245,7 +277,6 @@
       <button id="colsBtn" type="button">Columns</button>
       <div id="colsPanel" class="menu-panel" aria-label="Column picker">
         <div class="cols">
-          <label><input type="checkbox" data-col="date" checked> Date</label>
           <label><input type="checkbox" data-col="trail" checked> Trail</label>
           <label><input type="checkbox" data-col="region" checked> Region</label>
           <label><input type="checkbox" data-col="owner" checked> Owner</label>
@@ -263,21 +294,55 @@
     </div>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th data-col="date">Date</th>
-        <th data-col="trail">Trail</th>
-        <th data-col="region">Region</th>
-        <th data-col="owner">Owner</th>
-        <th data-col="fireDanger">Fire danger</th>
-        <th data-col="fireBan">Fire ban</th>
-        <th data-col="closedOn">Closed on</th>
-        <th data-col="closed">Closed</th>
-      </tr>
-    </thead>
-    <tbody id="rows"></tbody>
-  </table>
+  <div class="day-section">
+    <div class="day-header">
+      <div id="todayLabel">Today</div>
+      <div id="todayDate" class="date"></div>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-col="trail">Trail</th>
+            <th data-col="region">Region</th>
+            <th data-col="owner">Owner</th>
+            <th data-col="fireDanger">Fire danger</th>
+            <th data-col="fireBan">Fire ban</th>
+            <th data-col="closedOn">Closed on</th>
+            <th data-col="closed">Closed</th>
+          </tr>
+        </thead>
+        <tbody id="rowsToday"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="day-gap"></div>
+
+  <div class="day-section">
+    <div class="day-header">
+      <div id="tomorrowLabel">Tomorrow</div>
+      <div id="tomorrowDate" class="date"></div>
+    </div>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-col="trail">Trail</th>
+            <th data-col="region">Region</th>
+            <th data-col="owner">Owner</th>
+            <th data-col="fireDanger">Fire danger</th>
+            <th data-col="fireBan">Fire ban</th>
+            <th data-col="closedOn">Closed on</th>
+            <th data-col="closed">Closed</th>
+          </tr>
+        </thead>
+        <tbody id="rowsTomorrow"></tbody>
+      </table>
+    </div>
+  </div>
 
   <div id="status" class="box warn small">Loading…</div>
 
@@ -289,13 +354,55 @@
     </div>
   </div>
 
+  <div id="testBox" class="box small" style="display:none">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end">
+      <div style="min-width:220px; flex:1 1 220px">
+        <div><strong>Test region</strong></div>
+        <select id="testRegion" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:8px"></select>
+      </div>
+
+      <div style="min-width:160px">
+        <div><strong>Test date</strong></div>
+        <select id="testDate" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:8px"></select>
+      </div>
+
+      <label class="ctrl" style="margin:0">
+        <input id="testTfb" type="checkbox">
+        <span><strong>Total fire ban</strong></span>
+      </label>
+
+      <div style="min-width:190px">
+        <div><strong>Fire danger</strong></div>
+        <select id="testRating" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:8px">
+          <option value="None">None</option>
+          <option value="Moderate">Moderate</option>
+          <option value="High">High</option>
+          <option value="Extreme">Extreme</option>
+          <option value="Catastrophic">Catastrophic</option>
+        </select>
+      </div>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button id="testApply" type="button">Apply test</button>
+        <button id="testReset" type="button">Reset tests</button>
+      </div>
+    </div>
+
+    <div id="testNote" style="margin-top:8px; opacity:0.85"></div>
+  </div>
+
   <script>
     const TRAILS_URL = "./trails.json"
     const XML_URL = "https://data.eso.sa.gov.au/prod/cfs/criimson/fireDangerRating.xml"
 
     const statusEl = document.getElementById("status")
-    const tbody = document.getElementById("rows")
     const q = document.getElementById("q")
+
+    const tbodyToday = document.getElementById("rowsToday")
+    const tbodyTomorrow = document.getElementById("rowsTomorrow")
+
+    const todayDateEl = document.getElementById("todayDate")
+    const tomorrowDateEl = document.getElementById("tomorrowDate")
 
     const hiddenBox = document.getElementById("hiddenBox")
     const hiddenListEl = document.getElementById("hiddenList")
@@ -309,17 +416,30 @@
     const colsAll = document.getElementById("colsAll")
     const colsNone = document.getElementById("colsNone")
 
+    const testBox = document.getElementById("testBox")
+    const testRegionEl = document.getElementById("testRegion")
+    const testDateEl = document.getElementById("testDate")
+    const testTfbEl = document.getElementById("testTfb")
+    const testRatingEl = document.getElementById("testRating")
+    const testApplyBtn = document.getElementById("testApply")
+    const testResetBtn = document.getElementById("testReset")
+    const testNoteEl = document.getElementById("testNote")
+
     const HIDDEN_COOKIE = "hidden_trails_v1"
     const PREFS_COOKIE = "trail_prefs_v1"
 
     let hidden = new Set()
     let allRows = []
 
+    let trailsData = []
+    let forecastBase = new Map()
+
+    const overrides = new Map()
+
     let prefs = {
       sortKey: "trail",
-      sortMode: "date_az",
+      sortMode: "az",
       cols: {
-        date: true,
         trail: true,
         region: true,
         owner: true,
@@ -344,9 +464,9 @@
         .replaceAll("'", "&#39;")
     }
 
-    function nextFiveDays() {
+    function nextTwoDays() {
       const now = new Date()
-      return [0,1,2,3,4].map(i => {
+      return [0,1].map(i => {
         const d = new Date(now.getTime() + i * 86400000)
         return d.toISOString().slice(0,10)
       })
@@ -446,10 +566,7 @@
 
     function applyPrefsToUi() {
       sortKeyEl.value = prefs.sortKey || "trail"
-
-      if (sortModeEl) {
-        sortModeEl.value = prefs.sortMode || "date_az"
-      }
+      if (sortModeEl) sortModeEl.value = prefs.sortMode || "az"
 
       for (const cb of colsPanel.querySelectorAll("input[type=checkbox][data-col]")) {
         const k = cb.getAttribute("data-col")
@@ -501,37 +618,41 @@
 
     function sortedRows(rows) {
       const key = prefs.sortKey || "trail"
-      const mode = prefs.sortMode || "date_az"
-
-      const dirPrimary = (mode === "za" || mode === "date_za") ? -1 : 1
-      const groupByDate = (mode === "date_az" || mode === "date_za")
+      const mode = prefs.sortMode || "az"
+      const dir = (mode === "za") ? -1 : 1
 
       const copy = rows.slice()
       copy.sort((ra, rb) => {
-        if (groupByDate) {
-          const d = cmp(ra.date, rb.date)
-          if (d !== 0) return d
-        }
-
         const va = ra[key]
         const vb = rb[key]
 
         if (key === "closed") {
           const rank = v => v === "Yes" ? 2 : v === "Maybe" ? 1 : 0
-          return dirPrimary * (rank(va) - rank(vb))
+          return dir * (rank(va) - rank(vb))
         }
 
-        return dirPrimary * cmp(va, vb)
+        return dir * cmp(va, vb)
       })
 
       return copy
     }
 
-    function render(rows) {
+    function ovKey(region, date) {
+      return String(region || "") + "||" + String(date || "")
+    }
+
+    function getEffectiveForecast(region, date) {
+      const k = ovKey(region, date)
+      if (overrides.has(k)) return overrides.get(k)
+      const m = forecastBase.get(region) || new Map()
+      return m.get(date) || { rating: "-", tfbYes: false }
+    }
+
+    function renderIntoTbody(tbody, rowsForDay) {
       tbody.innerHTML = ""
 
       const term = q.value.toLowerCase()
-      const list = sortedRows(rows)
+      const list = sortedRows(rowsForDay)
 
       for (const r of list) {
         if (hidden.has(r.trail)) continue
@@ -568,7 +689,6 @@
           "</div>"
 
         tr.innerHTML =
-          "<td data-col=\"date\">" + escapeHtml(r.date) + "</td>" +
           "<td data-col=\"trail\">" + trailCell + "</td>" +
           "<td data-col=\"region\">" + escapeHtml(r.region) + "</td>" +
           "<td data-col=\"owner\">" + escapeHtml(r.owner) + "</td>" +
@@ -577,18 +697,74 @@
           "<td data-col=\"closedOn\">" + escapeHtml(r.closedOn) + "</td>" +
           "<td data-col=\"closed\">" + escapeHtml(r.closed) + "</td>"
 
-        if (term && !tr.textContent.toLowerCase().includes(term)) {
-          continue
-        }
-
+        if (term && !tr.textContent.toLowerCase().includes(term)) continue
         tbody.appendChild(tr)
       }
+    }
+
+    function renderAll() {
+      const days = nextTwoDays()
+      const today = days[0]
+      const tomorrow = days[1]
+
+      todayDateEl.textContent = today
+      tomorrowDateEl.textContent = tomorrow
+
+      const todayRows = allRows.filter(r => r.date === today)
+      const tomorrowRows = allRows.filter(r => r.date === tomorrow)
+
+      renderIntoTbody(tbodyToday, todayRows)
+      renderIntoTbody(tbodyTomorrow, tomorrowRows)
 
       applyColumnVisibility()
     }
 
-    function applySearch() {
-      render(allRows)
+    function updateTestNote() {
+      if (overrides.size === 0) {
+        testNoteEl.textContent = "No test overrides applied"
+        return
+      }
+      testNoteEl.textContent = "Active test overrides: " + overrides.size
+    }
+
+    function populateTestUi() {
+      const regions = [...forecastBase.keys()].sort((a,b) => String(a).localeCompare(String(b)))
+      testRegionEl.innerHTML = regions.map(r => "<option value=\"" + escapeHtml(r) + "\">" + escapeHtml(r) + "</option>").join("")
+
+      const days = nextTwoDays()
+      testDateEl.innerHTML = days.map(d => "<option value=\"" + escapeHtml(d) + "\">" + escapeHtml(d) + "</option>").join("")
+
+      testBox.style.display = regions.length ? "" : "none"
+      updateTestNote()
+    }
+
+    function rebuildRows() {
+      const days = nextTwoDays()
+      const rows = []
+
+      for (const t of trailsData) {
+        for (const d of days) {
+          const f = getEffectiveForecast(t.region, d)
+          const closed = computeClosed(f.tfbYes, f.rating, t.ban)
+
+          rows.push({
+            date: d,
+            trail: t.name,
+            region: t.region,
+            owner: t.owner,
+            fireDanger: f.rating,
+            fireBan: f.tfbYes ? "Yes" : "No",
+            closedOn: t.ban,
+            closed,
+            trailforks: t.trailforks || null,
+            official: t.official || null
+          })
+        }
+      }
+
+      allRows = rows
+      renderAll()
+      setStatus("ok", "Loaded " + allRows.length + " rows")
     }
 
     function closeColsPanelIfClickOutside(e) {
@@ -597,57 +773,7 @@
       if (!within) colsPanel.classList.remove("open")
     }
 
-    tbody.addEventListener("click", e => {
-      const btn = e.target.closest("button")
-      if (!btn) return
-
-      const name = btn.getAttribute("data-hide")
-      if (!name) return
-
-      hidden.add(name)
-      saveHidden()
-      renderHiddenList()
-      render(allRows)
-      setStatus("ok", "Loaded " + allRows.length + " rows")
-    })
-
-    hiddenListEl.addEventListener("click", e => {
-      const btn = e.target.closest("button")
-      if (!btn) return
-      const name = btn.getAttribute("data-unhide")
-      if (!name) return
-
-      hidden.delete(name)
-      saveHidden()
-      renderHiddenList()
-      render(allRows)
-      setStatus("ok", "Loaded " + allRows.length + " rows")
-    })
-
-    unhideAllBtn.addEventListener("click", () => {
-      hidden = new Set()
-      saveHidden()
-      renderHiddenList()
-      render(allRows)
-      setStatus("ok", "Loaded " + allRows.length + " rows")
-    })
-
-    sortKeyEl.addEventListener("change", () => {
-      prefs.sortKey = sortKeyEl.value
-      savePrefs()
-      render(allRows)
-    })
-
-    if (sortModeEl) {
-      sortModeEl.addEventListener("change", () => {
-        const v = sortModeEl.value
-        prefs.sortMode = v
-        if (v === "asc") prefs.sortMode = "az"
-        if (v === "desc") prefs.sortMode = "za"
-        savePrefs()
-        render(allRows)
-      })
-    }
+    document.addEventListener("click", closeColsPanelIfClickOutside)
 
     colsBtn.addEventListener("click", () => {
       colsPanel.classList.toggle("open")
@@ -677,7 +803,71 @@
       applyColumnVisibility()
     })
 
-    document.addEventListener("click", closeColsPanelIfClickOutside)
+    sortKeyEl.addEventListener("change", () => {
+      prefs.sortKey = sortKeyEl.value
+      savePrefs()
+      renderAll()
+    })
+
+    if (sortModeEl) {
+      sortModeEl.addEventListener("change", () => {
+        prefs.sortMode = sortModeEl.value
+        savePrefs()
+        renderAll()
+      })
+    }
+
+    q.addEventListener("input", () => renderAll())
+
+    document.addEventListener("click", e => {
+      const btn = e.target.closest("button")
+      if (!btn) return
+
+      const hideName = btn.getAttribute("data-hide")
+      if (hideName) {
+        hidden.add(hideName)
+        saveHidden()
+        renderHiddenList()
+        renderAll()
+        setStatus("ok", "Loaded " + allRows.length + " rows")
+        return
+      }
+
+      const unhideName = btn.getAttribute("data-unhide")
+      if (unhideName) {
+        hidden.delete(unhideName)
+        saveHidden()
+        renderHiddenList()
+        renderAll()
+        setStatus("ok", "Loaded " + allRows.length + " rows")
+      }
+    })
+
+    unhideAllBtn.addEventListener("click", () => {
+      hidden = new Set()
+      saveHidden()
+      renderHiddenList()
+      renderAll()
+      setStatus("ok", "Loaded " + allRows.length + " rows")
+    })
+
+    testApplyBtn.addEventListener("click", () => {
+      const region = testRegionEl.value
+      const date = testDateEl.value
+
+      const tfbYes = !!testTfbEl.checked
+      const rating = testRatingEl.value === "None" ? "-" : testRatingEl.value
+
+      overrides.set(ovKey(region, date), { rating, tfbYes })
+      updateTestNote()
+      rebuildRows()
+    })
+
+    testResetBtn.addEventListener("click", () => {
+      overrides.clear()
+      updateTestNote()
+      rebuildRows()
+    })
 
     async function main() {
       try {
@@ -686,14 +876,8 @@
 
         const p = loadPrefs()
         if (p) {
-          prefs.sortKey = p.sortKey || prefs.sortKey
-
-          if (p.sortMode) {
-            prefs.sortMode = p.sortMode
-          } else if (p.sortDir) {
-            prefs.sortMode = (p.sortDir === "desc") ? "za" : "az"
-          }
-
+          if (p.sortKey) prefs.sortKey = p.sortKey
+          if (p.sortMode) prefs.sortMode = p.sortMode
           if (p.cols && typeof p.cols === "object") {
             for (const k of Object.keys(prefs.cols)) {
               if (k in p.cols) prefs.cols[k] = !!p.cols[k]
@@ -703,48 +887,23 @@
         applyPrefsToUi()
 
         setStatus("warn", "Fetching trails.json")
-        const trails = (await (await fetch(TRAILS_URL, { cache: "no-store" })).json()).trails
+        const trailsJson = await (await fetch(TRAILS_URL, { cache: "no-store" })).json()
+        trailsData = Array.isArray(trailsJson.trails) ? trailsJson.trails : []
 
         setStatus("warn", "Fetching CFS XML")
         const xmlText = await (await fetch(XML_URL, { cache: "no-store" })).text()
         const xmlDoc = new DOMParser().parseFromString(xmlText, "application/xml")
         if (xmlDoc.querySelector("parsererror")) throw new Error("XML parse error")
 
-        const forecast = parseXml(xmlDoc)
-        const days = nextFiveDays()
-        const rows = []
+        forecastBase = parseXml(xmlDoc)
 
-        for (const t of trails) {
-          const regionMap = forecast.get(t.region) || new Map()
-
-          for (const d of days) {
-            const f = regionMap.get(d) || { rating: "-", tfbYes: false }
-            const closed = computeClosed(f.tfbYes, f.rating, t.ban)
-
-            rows.push({
-              date: d,
-              trail: t.name,
-              region: t.region,
-              owner: t.owner,
-              fireDanger: f.rating,
-              fireBan: f.tfbYes ? "Yes" : "No",
-              closedOn: t.ban,
-              closed,
-              trailforks: t.trailforks || null,
-              official: t.official || null
-            })
-          }
-        }
-
-        allRows = rows
-        render(allRows)
-        setStatus("ok", "Loaded " + allRows.length + " rows")
+        populateTestUi()
+        rebuildRows()
       } catch (e) {
         setStatus("err", "Failed to load live data: " + e.message)
       }
     }
 
-    q.addEventListener("input", applySearch)
     main()
   </script>
 </body>
