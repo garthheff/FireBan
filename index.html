@@ -156,9 +156,7 @@
 
     .pill button:hover { background: #f3f3f3; }
 
-    .day-section {
-      margin-top: 14px;
-    }
+    .day-section { margin-top: 14px; }
 
     .day-header {
       display: flex;
@@ -178,9 +176,7 @@
       opacity: 0.85;
     }
 
-    .day-gap {
-      height: 14px;
-    }
+    .day-gap { height: 14px; }
 
     .tablewrap {
       border: 1px solid #ddd;
@@ -296,7 +292,7 @@
 
   <div class="day-section">
     <div class="day-header">
-      <div id="todayLabel">Today</div>
+      <div>Today</div>
       <div id="todayDate" class="date"></div>
     </div>
 
@@ -322,7 +318,7 @@
 
   <div class="day-section">
     <div class="day-header">
-      <div id="tomorrowLabel">Tomorrow</div>
+      <div>Tomorrow</div>
       <div id="tomorrowDate" class="date"></div>
     </div>
 
@@ -409,7 +405,7 @@
     const unhideAllBtn = document.getElementById("unhideAllBtn")
 
     const sortKeyEl = document.getElementById("sortKey")
-    const sortModeEl = document.getElementById("sortMode") || document.getElementById("sortDir")
+    const sortModeEl = document.getElementById("sortMode")
 
     const colsBtn = document.getElementById("colsBtn")
     const colsPanel = document.getElementById("colsPanel")
@@ -449,6 +445,9 @@
         closed: true
       }
     }
+
+    sortKeyEl.value = "trail"
+    sortModeEl.value = "az"
 
     function setStatus(kind, msg) {
       statusEl.className = "box " + kind + " small"
@@ -566,7 +565,7 @@
 
     function applyPrefsToUi() {
       sortKeyEl.value = prefs.sortKey || "trail"
-      if (sortModeEl) sortModeEl.value = prefs.sortMode || "az"
+      sortModeEl.value = prefs.sortMode || "az"
 
       for (const cb of colsPanel.querySelectorAll("input[type=checkbox][data-col]")) {
         const k = cb.getAttribute("data-col")
@@ -809,13 +808,11 @@
       renderAll()
     })
 
-    if (sortModeEl) {
-      sortModeEl.addEventListener("change", () => {
-        prefs.sortMode = sortModeEl.value
-        savePrefs()
-        renderAll()
-      })
-    }
+    sortModeEl.addEventListener("change", () => {
+      prefs.sortMode = sortModeEl.value
+      savePrefs()
+      renderAll()
+    })
 
     q.addEventListener("input", () => renderAll())
 
@@ -884,6 +881,10 @@
             }
           }
         }
+
+        if (!prefs.sortKey) prefs.sortKey = "trail"
+        if (!prefs.sortMode) prefs.sortMode = "az"
+
         applyPrefsToUi()
 
         setStatus("warn", "Fetching trails.json")
