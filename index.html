@@ -400,7 +400,9 @@
   </div>
 
   <div class="day-gap"></div>
-
+  <div id="tomorrowPrelimWarn" class="box warn small" style="display:none; margin-top:12px">
+    Fire Danger Ratings are published between 4:30–5:00pm ACST/ACDT for the following day. Earlier ratings are preliminary only.
+  </div>
   <div class="day-section">
     <div class="day-header">
       <div>Tomorrow</div>
@@ -575,7 +577,29 @@ function nextTwoDays() {
   })
 }
 
+function adelaideMinutesNow() {
+  const parts = new Intl.DateTimeFormat("en-AU", {
+    timeZone: "Australia/Adelaide",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).formatToParts(new Date())
 
+  const get = t => parts.find(p => p.type === t)?.value || "0"
+  const h = parseInt(get("hour"), 10)
+  const m = parseInt(get("minute"), 10)
+  return h * 60 + m
+}
+
+function updateTomorrowPrelimWarning() {
+  const el = document.getElementById("tomorrowPrelimWarn")
+  if (!el) return
+
+  const nowMins = adelaideMinutesNow()
+  const cutoff = 17 * 60  // 5:00pm Adelaide time
+
+  el.style.display = nowMins < cutoff ? "" : "none"
+}
     function isTotalFireBan(name) {
       return (name || "").trim() === "Total Fire Ban"
     }
@@ -820,6 +844,8 @@ function nextTwoDays() {
       map.setView([-34.9285, 138.6007], 9)
     }
 
+updateTomorrowPrelimWarning()
+    
     function colorForClosed(v) {
       if (v === "Yes") return "#d32f2f"
       if (v === "Maybe") return "#f9a825"
